@@ -70,7 +70,7 @@ bool blockReadingUART = false;
     // pca like capture mode for radio decoding
     void timer2_isr(void) __interrupt (d_T2_Vector);
     // hardware uart
-    void uart_isr(void)   __interrupt (d_UART0_Vector);
+    // void uart_isr(void)   __interrupt (d_UART0_Vector);
 
 #elif defined(TARGET_BOARD_EFM8BB1) || defined(TARGET_BOARD_EFM8BB1LCB)
     // timer0 was used for PCA in portisch, instead just use system clock
@@ -142,7 +142,7 @@ void serial_loopback(void)
 
 
 
-void uart_state_machine(const unsigned int rxdata)
+void uart_state_machine(const uint8_t rxdata)
 {
 	// FIXME: add comment
 	static __xdata uint8_t position = 0;
@@ -152,7 +152,7 @@ void uart_state_machine(const unsigned int rxdata)
 	{
 		// check if start sequence got received
 		case IDLE:
-			if ((rxdata & 0xFF) == RF_CODE_START)
+			if (rxdata == RF_CODE_START)
             {
 				uart_state = SYNC_INIT;
             }
@@ -160,7 +160,7 @@ void uart_state_machine(const unsigned int rxdata)
 
 		// sync byte got received, read command
 		case SYNC_INIT:
-			uart_command = rxdata & 0xFF;
+			uart_command = rxdata;
 			uart_state = SYNC_FINISH;
 
 			// check if some data needs to be received
@@ -236,7 +236,7 @@ void uart_state_machine(const unsigned int rxdata)
 		// Receiving UART data length
 		case RECEIVE_LENGTH:
 			position = 0;
-			packetLength = rxdata & 0xFF;
+			packetLength = rxdata;
 			if (packetLength > 0)
 			{
 				// stop sniffing while handling received data
@@ -252,7 +252,7 @@ void uart_state_machine(const unsigned int rxdata)
 
 		// Receiving UART data
 		case RECEIVING:
-			RF_DATA[position] = rxdata & 0xFF;
+			RF_DATA[position] = rxdata;
 
 			// DEBUG:
 			//puthex2(RF_DATA[position]);
@@ -273,7 +273,7 @@ void uart_state_machine(const unsigned int rxdata)
 
 		// wait and check for UART_SYNC_END
 		case SYNC_FINISH:
-			if ((rxdata & 0xFF) == RF_CODE_STOP)
+			if (rxdata == RF_CODE_STOP)
 			{
 				uart_state = IDLE;
                 
@@ -428,7 +428,8 @@ void main (void)
 	const uint16_t startupDelay = 3000;
 
 	// changed by external hardware, so must specify volatile type so not optimized out
-	volatile unsigned int rxdata = UART_NO_DATA;
+	volatile uint8_t rxdata = 0;
+	volatile bool rx_data_available = false;
 
 	// FIXME: add comment
     uint16_t bucket = 0;
@@ -479,7 +480,7 @@ void main (void)
     // sets TI=1 so ring buffer logic works
     init_serial_interrupt();
     // enable actual interrupt
-    enable_serial_interrupt();
+    // enable_serial_interrupt();
     
 #if defined(TARGET_BOARD_OB38S003)
     init_timer1_8bit_autoreload();
@@ -573,18 +574,19 @@ void main (void)
 #if 1
 		// check if something got received by UART
 		// only read data from uart if idle
-		if (!blockReadingUART)
+		if (uart_rx_data_available())
         {
 			rxdata = uart_getc();
+			rx_data_available = true;
 		} else {
-			rxdata = UART_NO_DATA;
+			rxdata = 0;
         }
         
 #endif
         
         
 
-#if 1
+#if 0
         // check if serial transmit buffer is empty
         if(!is_uart_tx_buffer_empty())
         {
@@ -599,7 +601,7 @@ void main (void)
 
 
 
-		if (rxdata == UART_NO_DATA)
+		if (!rx_data_available)
 		{
 
 #if 1
@@ -624,6 +626,7 @@ void main (void)
 		else
 		{
 			uart_state_machine(rxdata);
+			rx_data_available = false;
 		}
 
 		/*------------------------------------------

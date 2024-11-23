@@ -175,6 +175,8 @@ LDFLAGS  = $(TARGET_ARCH) $(MEMORY_MODEL) $(MEMORY_SIZES)
 
 all: $(TARGET_PASSTHROUGH) $(TARGET_PORTISCH) $(TARGET_RCSWITCH)
 
+portisch: $(TARGET_PORTISCH)
+
 clean:
 	# it is safer to remove wildcard with file extension instead of the entire directory
 	# but can revisit this issue in the future (I think other projects just remove directory)

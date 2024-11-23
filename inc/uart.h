@@ -20,21 +20,21 @@
 
 // FIXME: explain choice of size
 // portisch allocated TX=64 and RX=32
-#define UART_RX_BUFFER_SIZE 64
-#define UART_TX_BUFFER_SIZE	32
+// #define UART_RX_BUFFER_SIZE 64
+// #define UART_TX_BUFFER_SIZE	32
 
 
 // high byte error return code of uart_getc()
 // Framing Error by UART
-#define UART_FRAME_ERROR      0x1000
+// #define UART_FRAME_ERROR      0x1000
 // Overrun condition by UART
-#define UART_OVERRUN_ERROR    0x0800
+// #define UART_OVERRUN_ERROR    0x0800
 // Parity Error by UART
-#define UART_PARITY_ERROR     0x0400
+// #define UART_PARITY_ERROR     0x0400
 // receive ringbuffer overflow
-#define UART_BUFFER_OVERFLOW  0x0200
+// #define UART_BUFFER_OVERFLOW  0x0200
 // no receive data available
-#define UART_NO_DATA          0x0100
+// #define UART_NO_DATA          0x0100
 
 
 //-----------------------------------------------------------------------------
@@ -43,11 +43,12 @@
 
 // public prototypes
 extern void uart_init_tx_polling(void);
-extern bool is_uart_tx_finished(void);
-extern bool is_uart_tx_buffer_empty(void);
-extern unsigned int uart_getc(void);
+extern bool uart_rx_data_available(void);
+// extern bool is_uart_tx_finished(void);
+// extern bool is_uart_tx_buffer_empty(void);
+extern uint8_t uart_getc(void);
 extern void uart_putc(uint8_t txdata);
-extern void uart_write(uint8_t value);
+// extern void uart_write(uint8_t value);
 extern void uart_put_command(uint8_t command);
 
 

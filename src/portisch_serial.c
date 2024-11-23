@@ -90,14 +90,14 @@ void uart_put_RF_buckets(uint8_t command)
     // but there is potentially so much data here that we would overflow prior to returning to main loop
     // so just send in pieces instead
 
-    while(!is_uart_tx_buffer_empty())
-    {
-        if (is_uart_tx_finished())
-        {
-            // if not empty, set TI, which triggers interrupt to actually transmit
-            uart_init_tx_polling();
-        }
-    }
+    // while(!is_uart_tx_buffer_empty())
+    // {
+    //     if (is_uart_tx_finished())
+    //     {
+    //         // if not empty, set TI, which triggers interrupt to actually transmit
+    //         uart_init_tx_polling();
+    //     }
+    // }
 
 	// send up to 7 buckets
 	while (index < bucket_count)
@@ -112,13 +112,13 @@ void uart_put_RF_buckets(uint8_t command)
 	uart_putc(bucket_sync & 0xFF);
 
 	// start and wait for transmit
-    while(!is_uart_tx_buffer_empty())
-    {
-        if (is_uart_tx_finished())
-        {
-            uart_init_tx_polling();
-        }
-    }
+    // while(!is_uart_tx_buffer_empty())
+    // {
+    //     if (is_uart_tx_finished())
+    //     {
+    //         uart_init_tx_polling();
+    //     }
+    // }
 
 	index = 0;
     
@@ -129,17 +129,17 @@ void uart_put_RF_buckets(uint8_t command)
 
 		// be safe so as to avoid buffer overflow
         // FIXME: could modulo divide be worked into ring buffer logic itself?
-		if ((index % UART_TX_BUFFER_SIZE) == 0)
-		{
-			// start and wait for transmit
-            while(!is_uart_tx_buffer_empty())
-            {
-                if (is_uart_tx_finished())
-                {
-                    uart_init_tx_polling();
-                }
-            }
-		}
+		// if ((index % UART_TX_BUFFER_SIZE) == 0)
+		// {
+		// 	// start and wait for transmit
+        //     while(!is_uart_tx_buffer_empty())
+        //     {
+        //         if (is_uart_tx_finished())
+        //         {
+        //             uart_init_tx_polling();
+        //         }
+        //     }
+		// }
 	}
 
 	uart_putc(RF_CODE_STOP);
