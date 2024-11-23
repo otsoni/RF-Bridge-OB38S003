@@ -33,6 +33,9 @@ void enable_watchdog(void)
     TAKEY = 0x55;
     TAKEY = 0xAA;
     TAKEY = 0x5A;
+
+    // ~3.2768s time period, otherwise sending long signals causes reset
+    WDTC |= 0x08;
     
     // sets WDTE bit
     WDTC |= 0x20;

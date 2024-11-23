@@ -22,7 +22,7 @@
 #include "ob38s003_sfr.h"
 
 // the classic library for radio packet decoding
-#include "rcswitch.h"
+// #include "rcswitch.h"
 
 //
 #include "state_machine.h"
@@ -43,8 +43,8 @@
 // FIXME: do not understand why compiler does not complain if passthrough_mode is not defined at all
 // this simply monitors signal levels in/out from radio receiver/transmitter chips and mirrors the levels on the TXD/RXD pins going to ESP8265
 // radio packet decoding is then the responsibility of the ESP8265
-//#define PASSTHROUGH_MODE 0
-#define PASSTHROUGH_MODE 1
+#define PASSTHROUGH_MODE 0
+//#define PASSTHROUGH_MODE 1
 
 
 #if !PASSTHROUGH_MODE
@@ -56,7 +56,7 @@
     // FIXME: if reset pin is set to reset function, instead of gpio, does this interfere with anything (e.g., software serial?)
     extern void tm0(void)        __interrupt (1);
     extern void timer1_isr(void) __interrupt (3);
-    extern void uart_isr(void)   __interrupt (4);
+    // extern void uart_isr(void)   __interrupt (4);
     extern void timer2_isr(void) __interrupt (5);
     
 #endif
@@ -221,7 +221,14 @@ int main (void)
     delay1ms(500);
 
     // enable interrupts
-    //enable_global_interrupts();
+    enable_global_interrupts();
+
+    init_uart();
+    uart_init_tx_polling();
+
+    init_timer2_capture();
+
+    init_capture_interrupt();
 
         
     // watchdog will force a reset, unless we periodically write to it, demonstrating loop is not stuck somewhere
@@ -272,26 +279,26 @@ int main (void)
         }
 #else
 
-        // try to get one byte from uart rx buffer
-        rxdata = uart_getc();
+        // // try to get one byte from uart rx buffer
+        // rxdata = uart_getc();
 
      
-        // check if serial transmit buffer is empty
-        if(!is_uart_tx_buffer_empty())
-        {
-            if (is_uart_tx_finished())
-            {
-                // if not empty, set transmit interrupt flag, which triggers actual transmission
-                uart_init_tx_polling();
-            }
-        }
+        // // check if serial transmit buffer is empty
+        // if(!is_uart_tx_buffer_empty())
+        // {
+        //     if (is_uart_tx_finished())
+        //     {
+        //         // if not empty, set transmit interrupt flag, which triggers actual transmission
+        //         uart_init_tx_polling();
+        //     }
+        // }
         
 
-        // process serial receive data
-        if (rxdata != UART_NO_DATA)
-        {
-            uart_state_machine(rxdata);
-        }
+        // // process serial receive data
+        // if (rxdata != UART_NO_DATA)
+        // {
+        //     uart_state_machine(rxdata);
+        // }
             
 #endif
 
@@ -318,13 +325,13 @@ int main (void)
             disable_capture_interrupt();
             
             // formatted for tasmota
-            radio_decode_report();
+            //radio_decode_report();
             
             // DEBUG: formatted like rc-switch example
             //radio_decode_debug();
             
             // DEBUG:
-            //radio_timings();
+            radio_timings();
             
             led_toggle();
 
@@ -335,17 +342,17 @@ int main (void)
             // DEBUG: using software uart
             // FIXME: a little dangerous as-is because basically sits in a while() loop ?
             // protocol index
-            putc('p');
-            putc('x');
-            puthex2(get_received_protocol());
-            putc(' ');
+            // putc('p');
+            // putc('x');
+            // puthex2(get_received_protocol());
+            // putc(' ');
 
             // bits received
-            putc('b');
-            putc('x');
-            puthex2(get_received_bitlength());
-            putc('\r');
-            putc('\n');
+            // putc('b');
+            // putc('x');
+            // puthex2(get_received_bitlength());
+            // putc('\r');
+            // putc('\n');
         }
     
 #endif

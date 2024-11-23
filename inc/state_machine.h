@@ -50,7 +50,7 @@ typedef enum
 } UART_COMMAND_T;
 
 void uart_state_machine(const unsigned int rxdata);
-void radio_decode_report(void);
+//void radio_decode_report(void);
 void radio_timings(void);
 
 

@@ -1,11 +1,13 @@
 #include "delay.h"
 #include "hal.h"
-#include "rcswitch.h"
+// #include "rcswitch.h"
 #include "state_machine.h"
 #include "uart.h"
+#include "timer.h"
 
 
 #include <stdint.h>
+#include <stdio.h>
 
 //-----------------------------------------------------------------------------
 // Portisch generally used this type of state machine, which I had alot of trouble reading
@@ -78,19 +80,19 @@ void uart_state_machine(const unsigned int rxdata)
                     break;
                 case RF_CODE_RFOUT:
                     break;
-                case RF_DO_BEEP:
-                    // FIXME: replace with timer rather than delay(), although appears original code was blocking too
-                    buzzer_on();
-                    delay1ms(50);
-                    buzzer_off();
+                // case RF_DO_BEEP:
+                //     // FIXME: replace with timer rather than delay(), although appears original code was blocking too
+                //     buzzer_on();
+                //     delay1ms(50);
+                //     buzzer_off();
 
-                    // send acknowledge
-                    uart_put_command(RF_CODE_ACK);
-                    break;
-                case RF_ALTERNATIVE_FIRMWARE:
-                    uart_put_command(RF_CODE_ACK);
-                    uart_put_command(FIRMWARE_VERSION);
-                    break;
+                //     // send acknowledge
+                //     uart_put_command(RF_CODE_ACK);
+                //     break;
+                // case RF_ALTERNATIVE_FIRMWARE:
+                //     uart_put_command(RF_CODE_ACK);
+                //     uart_put_command(FIRMWARE_VERSION);
+                //     break;
                 case RF_CODE_SNIFFING_ON:
                     //gSniffingMode = ADVANCED;
                     //PCA0_DoSniffing(RF_CODE_SNIFFING_ON);
@@ -178,51 +180,60 @@ void uart_state_machine(const unsigned int rxdata)
 
 
 // FIXME: some of these function names really need fixing
-void radio_decode_report(void)
-{
-    uint8_t i = 0;
-    uint8_t b = 0;
+// void radio_decode_report(void)
+// {
+//     uint8_t i = 0;
+//     uint8_t b = 0;
 
-    // packet start sequence
-    putchar(RF_CODE_START);
-    putchar(RF_CODE_RFIN);
+//     // packet start sequence
+//     putchar(RF_CODE_START);
+//     putchar(RF_CODE_RFIN);
     
-    // sync, low, high timings
-    putchar((timings[0] >> 8) & 0xFF);
-    putchar(timings[0] & 0xFF);
+//     // sync, low, high timings
+//     putchar((timings[0] >> 8) & 0xFF);
+//     putchar(timings[0] & 0xFF);
 
     
-    // FIXME: not sure if we should compute an average or something
-    // FIXME: handle inverted signal?
-    putchar((timings[2] >> 8) & 0xFF);
-    putchar( timings[2] & 0xFF);
-    putchar((timings[1] >> 8) & 0xFF);
-    putchar( timings[1] & 0xFF);
+//     // FIXME: not sure if we should compute an average or something
+//     // FIXME: handle inverted signal?
+//     putchar((timings[2] >> 8) & 0xFF);
+//     putchar( timings[2] & 0xFF);
+//     putchar((timings[1] >> 8) & 0xFF);
+//     putchar( timings[1] & 0xFF);
     
-    // data
-    // FIXME: strange that shifting by ZERO works but omitting the shift does not
-    putchar((get_received_value() >> 16) & 0xFF);
-    putchar((get_received_value() >>  8) & 0xFF);
-    putchar((get_received_value() >>  0) & 0xFF);
+//     // data
+//     // FIXME: strange that shifting by ZERO works but omitting the shift does not
+//     putchar((get_received_value() >> 16) & 0xFF);
+//     putchar((get_received_value() >>  8) & 0xFF);
+//     putchar((get_received_value() >>  0) & 0xFF);
     
-    // packet stop
-    putchar(RF_CODE_STOP);
-}
+//     // packet stop
+//     putchar(RF_CODE_STOP);
+// }
 
 // FIXME: think Tasmota ignores this for now because command is unknown?
 void radio_timings(void)
 {
     unsigned int index;
     
-    for (index = 0; index < get_received_bitlength() * 2; index++)
+    for (index = 0; index < received_byte_count; index++)
     {
         // packet start sequence
         putchar(RF_CODE_START);
         putchar(0xAF);
         
-        // sync, low, high timings
-        putchar((timings[index] >> 8) & 0xFF);
-        putchar(timings[index] & 0xFF);
+        if (index < TIMINGS_MAX_CHANGES)
+        {
+            // sync, low, high timings
+            putchar((timings[index] >> 8) & 0xFF);
+            putchar(timings[index] & 0xFF);
+        }
+        else
+        {
+            // sync, low, high timings
+            putchar((extra_timings[index - TIMINGS_MAX_CHANGES] >> 8) & 0xFF);
+            putchar(extra_timings[index - TIMINGS_MAX_CHANGES] & 0xFF);
+        }
     }
     
     putchar(RF_CODE_STOP);

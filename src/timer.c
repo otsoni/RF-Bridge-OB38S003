@@ -4,13 +4,28 @@
 
 
 #include "hal.h"
-#include "rcswitch.h"
+// #include "rcswitch.h"
 #include "timer.h"
 
 // track time since startup in one millisecond increments
 static unsigned long gTimeMilliseconds = 0;
 static unsigned long gTimeTenMicroseconds = 0;
 
+volatile bool ready_to_send = false;
+volatile uint8_t received_byte_count = 0;
+volatile __xdata uint16_t timings[TIMINGS_MAX_CHANGES];
+volatile uint16_t extra_timings[TIMINGS_MAX_EXTRA];
+
+
+bool available(void)
+{
+    return ready_to_send;
+}
+
+void reset_available(void)
+{
+    ready_to_send = false;
+}
 
 unsigned long get_current_timer0(void)
 {
@@ -135,7 +150,7 @@ void timer2_isr(void) __interrupt (5)
     static unsigned int changeCount = 0;
 
     // FIXME: move to rcswitch.h
-    const unsigned int separationLimit = gRCSwitch.nSeparationLimit;
+    const unsigned int separationLimit = 4300;
 
     
     // we are always looking for pulse duration (i.e., difference), so need to store previous and new values
@@ -187,13 +202,19 @@ void timer2_isr(void) __interrupt (5)
           
           if (repeatCount == repeatThreshold)
           {
-            for(unsigned int i = 1; i <= numProto; i++)
+            // for(unsigned int i = 1; i <= numProto; i++)
+            // {
+            //   if (receive_protocol(i, changeCount))
+            //   {
+            //     // receive succeeded for protocol i
+            //     break;
+            //   }
+            // }
+
+            if (changeCount > 7)
             {
-              if (receive_protocol(i, changeCount))
-              {
-                // receive succeeded for protocol i
-                break;
-              }
+                ready_to_send = true;
+                received_byte_count = changeCount - 1;
             }
             
             repeatCount = 0;
@@ -204,13 +225,20 @@ void timer2_isr(void) __interrupt (5)
     }
 
     // detect overflow
-    if (changeCount >= RCSWITCH_MAX_CHANGES)
+    if (changeCount >= TIMINGS_MAX_CHANGES + TIMINGS_MAX_EXTRA)
     {
         changeCount = 0;
         repeatCount = 0;
+        timings[changeCount++] = duration;
     }
-
-    timings[changeCount++] = duration;
+    else if (changeCount >= TIMINGS_MAX_CHANGES)
+    {
+        extra_timings[(changeCount++) - TIMINGS_MAX_CHANGES] = duration;
+    }
+    else
+    {
+        timings[changeCount++] = duration;
+    }
     
         
     //clear compare/capture 1 flag

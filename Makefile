@@ -86,7 +86,6 @@ else
         src/delay.c \
         src/hal.c \
         src/main.c \
-        src/rcswitch.c \
         src/state_machine.c \
         src/timer.c \
         src/uart.c \
